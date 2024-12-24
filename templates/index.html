@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Interface</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link href="{{ url_for('static', filename='tailwind.min.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='all.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='hircoir.eu.org.css') }}">
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 min-h-screen">
+    <!-- Context Menu -->
+    <div id="contextMenu" class="context-menu">
+        <div class="context-menu-item" id="editMenuItem">
+            <i class="fas fa-edit"></i>
+            <span>Edit</span>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 class="text-xl font-bold mb-4">Edit Message</h2>
+            <textarea id="editMessageInput" class="modal-textarea w-full bg-gray-700 input-focus rounded-lg px-3 py-2 text-sm"></textarea>
+            <div class="flex justify-end space-x-2">
+                <button id="cancelEditBtn" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg transition">Cancel</button>
+                <button id="saveEditBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex h-screen">
+        <!-- Collapsible Sidebar -->
+        <div id="sidebar" class="transition-width sidebar-expanded bg-gray-800 glass-effect flex flex-col h-full">
+            <div class="p-4 flex items-center justify-between sidebar-icon">
+                <button id="toggleSidebar" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <span id="sidebarTitle" class="font-semibold text-lg ml-2 sidebar-content">AI Chat</span>
+            </div>
+
+            <button id="newChatBtn" class="flex items-center m-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-2 rounded-lg hover-shadow sidebar-content">
+                <i class="fas fa-plus mr-2"></i>
+                <span>New Chat</span>
+            </button>
+
+            <div class="p-4 sidebar-content">
+                <div class="space-y-3">
+                    <input type="text" id="baseHost" placeholder="Ollama Base Host" value="{{ default_settings.base_host }}"
+                        class="w-full bg-gray-700 input-focus rounded-lg px-3 py-2 text-sm">
+                    <select id="ollamaModel" class="w-full bg-gray-700 input-focus rounded-lg px-3 py-2 text-sm">
+                        <option value="">Select Model</option>
+                        {% for model in ollama_models %}
+                        <option value="{{ model }}" {% if model == default_settings.ollama_model %}selected{% endif %}>{{ model }}</option>
+                        {% endfor %}
+                    </select>
+                    <button id="listModelsBtn" class="w-full bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg text-sm transition">
+                        <i class="fas fa-sync-alt mr-2"></i>List Models
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-grow overflow-y-auto px-4 sidebar-content">
+                <h3 class="text-sm font-semibold text-gray-400 mb-2">Saved Chats</h3>
+                <div id="chatsList" class="space-y-2">
+                    {% for chat in chat_files %}
+                    <div class="chat-file hover:bg-gray-700 p-2 rounded-lg cursor-pointer transition" data-file="{{ chat }}">
+                        <i class="fas fa-comment-alt mr-2"></i>
+                        <span class="chat-name" data-file="{{ chat }}">{{ chat.replace('.json', '') }}</span>
+                        <i class="fas fa-pencil-alt ml-2 edit-chat-name" data-file="{{ chat }}"></i>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-grow flex flex-col bg-gray-900">
+            <!-- Chat Area -->
+            <div id="chatArea" class="flex-grow overflow-y-auto p-4 space-y-4">
+                <!-- Messages will be inserted here -->
+            </div>
+
+            <!-- Input Area -->
+            <div class="border-t border-gray-700 p-4 space-y-4">
+                <div class="flex space-x-2">
+                    <textarea id="messageInput" rows="3" placeholder="Type your message here..."
+                        class="flex-grow bg-gray-800 input-focus rounded-lg px-4 py-2 resize-none"></textarea>
+                    <div class="flex flex-col space-y-2">
+                        <button id="sendBtn" class="bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-2 rounded-lg hover-shadow">
+                            <i class="fas fa-paper-plane mr-2"></i>Send
+                        </button>
+                        <button id="stopBtn" class="stop-button bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg transition">
+                            <i class="fas fa-stop mr-2"></i>Stop
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TTS Controls -->
+                <div class="flex items-center space-x-4 bg-gray-800 p-4 rounded-lg glass-effect">
+                    <select id="ttsModel" class="bg-gray-700 input-focus rounded-lg px-3 py-2 text-sm">
+                        <option value="">Select TTS Model</option>
+                        {% for model in tts_models %}
+                        <option value="{{ model }}" {% if model == default_settings.tts_model %}selected{% endif %}>{{ model }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <button id="playBtn" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition">
+                        <i class="fas fa-play mr-2"></i>Play
+                    </button>
+
+                    <button id="pauseBtn" class="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-lg transition">
+                        <i class="fas fa-pause mr-2"></i>Pause
+                    </button>
+
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-volume-up text-gray-400"></i>
+                        <input type="range" id="volumeSlider" min="0" max="100" value="{{ default_settings.volume | default(100) }}"
+                            class="w-24 accent-blue-500">
+                    </div>
+
+                    <label class="flex items-center space-x-2 text-sm">
+                        <input type="checkbox" id="removeMarkdown" class="form-checkbox text-blue-500" {% if default_settings.remove_markdown %}checked{% endif %}>
+                        <span>Remove Markdown</span>
+                    </label>
+
+                    <!-- Créditos -->
+                    <div class="flex items-center space-x-4 bg-gray-800 p-4 rounded-lg glass-effect">
+                        <span>Hecho con amor por <a href="https://youtube.com/@hircoir" target="_blank" class="text-blue-500 hover:underline">HirCoir</a></span>
+                        <span>Repo: <a href="https://github.com/hircoir/OLLAMA-TTS" target="_blank" class="text-blue-500 hover:underline">OLLAMA-TTS</a></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='hircoir.eu.org.js') }}"></script>
+</body>
+</html>
