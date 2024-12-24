@@ -26,7 +26,7 @@ OLLAMA-TTS is a web application built with Flask that provides a user-friendly i
 
 3. **Run the Application**:
    ```bash
-   python app.py
+   python main.py
    ```
 
 4. **Access the Application**:
